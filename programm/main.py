@@ -1,13 +1,19 @@
 # -*- coding: utf-8 -*-
-#import routeros_api
+import netmiko
 import string
 import random
-import smtplib
-import routeros
 from mailer import send_mail
+import os
+
+ip = os.environ.get('mik_ip')
+login = os.environ.get('mik_login')
+password = os.environ.get('mik_pass')
+port=os.environ.get('mik_port')
+command=':wq!'
+
 
 mail_message = '''
-Hello, The Password on the Guest WIFI has been changed.
+Hello, The Password of the Guest WIFI has been changed.
 SSID: MBMFWF
 Password: {}
 '''
@@ -17,8 +23,10 @@ def generate_pass(length=8):
 	symbols=string.ascii_uppercase + string.ascii_lowercase + string.digits
 	return ''.join(random.choices(symbols,k=length))
 
-
+def mikrotik_change_passwd(new_pass,ip,login,password):
+	pass
 
 	
 if __name__=="__main__":
-	print(generate_pass())	
+	
+	print(ip)	
