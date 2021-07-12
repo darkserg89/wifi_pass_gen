@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #!/bin/python3
+import requests
+import json
 import netmiko
 import string
 import random
@@ -9,6 +11,7 @@ import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
+from faker import Faker
 
 
 
@@ -16,6 +19,7 @@ ip = os.environ.get('mik_ip')
 login = os.environ.get('mik_login')
 password = os.environ.get('mik_pass')
 port=os.environ.get('mik_port')
+#command='/interface wireless security-profiles print detail value-list'
 command='/interface wireless security-profiles print detail value-list'
 mail_ip=os.environ.get('mail_ip')
 mail_port=os.environ.get('mail_port')
@@ -50,10 +54,10 @@ def send_mail(from_addr, to_addr, message_text, subject='No Subject',smtp_server
     body =  message_text
     #Creating a msg based on PLAIN text
     msg.attach(MIMEText(body,'plain'))
-    #Convert msg to string
+    #Convert msg to  the string
     text_msg = msg.as_string()
 
-    #Sending a mail to server
+    #Sending a mail to the server
     smtp_server =  smtplib.SMTP(smtp_server_ip,smtp_port)
     #Testing the connection
     smtp_server.ehlo()
@@ -64,6 +68,11 @@ def send_mail(from_addr, to_addr, message_text, subject='No Subject',smtp_server
     smtp_server.sendmail(from_addr,to_addr, text_msg)
     smtp_server.quit()
 
+def send_rocket(rocket_webhook,new_password,channel_name,text_message,username="Rocket.Cat",avatar=":wifi:"):
+    "Sends a notification to rocket channel"
+    payload = {"username":"Rocket.Cat","icon_emoji":":wifi:","channel":channel_name}
+    r = request.post(url,json.dump(payload))
+    
 
 class Mikrot:
     def __init__(self,login,password,ip,port=22):
@@ -76,11 +85,12 @@ class Mikrot:
         self._ex_pass=None
     @classmethod    
     def generate_pass(cls):
-        'Generate password with the length'
-        numbers=string.digits
-        city = ['moscow','london','tokio','dhaka','bejing','mumbai','cairo','mexico','shanghai','delhi','osaka','praha','istambul']
-        logging.info('func _generate_pass - generating a new password')
-        return random.choice(city).capitalize() + ''.join(random.choices(numbers,k=4))
+        'Generate password by using faker'
+        fake = Faker()
+        lst_pass = [fake.first_name() + fake.last_name() + fake.year() for i in range(100)]
+        new_password = random.choice(lst_pass)
+        logging.info(f'generating a new password: {new_password}')
+        return new_password
     
     def show_command(self,command):
         logging.info(f'connecting to {self.ip} device to get the config')
@@ -92,7 +102,8 @@ class Mikrot:
     def change_wifi_passwd(self,new_password):
         re_pat='passphrase=\"(\w+)\"'
         cmd_get_current_pass='/caps-man security print'
-        cmd_passwd_change=f'/caps-man security set security-profile passphrase={new_password}'
+        #cmd_passwd_change=f'/caps-man security set security-profile passphrase={new_password}'
+        cmd_passwd_change=f'/caps-man security set security1 passphrase={new_password}'
         raw_current_pass = self.show_command(cmd_get_current_pass)
         
         #try to connect and set up a new password
@@ -123,9 +134,10 @@ def main_prog():
     else: msg=error_message
     recipients = [client.strip() for client in mail_clients.split(',')]
     logging.info(f'Sending email with a new password:{myrouter.get_pass} to {recipients}')
-    send_mail('test@mhch.ru',recipients,msg,subject='Guest WIFI password')
+    #send_mail('test@mhch.ru',recipients,msg,subject='Monthly WIFI password change')
     logging.info(f'The script successfully finished, the mail sent, new password: {myrouter.get_pass} the old one: {myrouter.get_expass}')
-	
+    print(msg)
+    print(f'The previouse password was {myrouter.get_expass()}')
 if __name__=="__main__":
     main_prog()
     
